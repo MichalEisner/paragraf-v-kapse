@@ -26,6 +26,9 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppColors.isDark = isDark;
+
     final allExplanations = LawDataService.explanations;
     final filtered = allExplanations.where((e) {
       final matchesQuery = e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -77,13 +80,29 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
             // Search input
             TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
+              style: AppTypography.bodyMd(color: AppColors.onSurface),
               decoration: InputDecoration(
                 hintText: 'Hledat v zákoníku práce...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.outline),
-                fillColor: AppColors.surfaceContainerLowest,
+                hintStyle: AppTypography.bodyMd(color: AppColors.outline),
+                prefixIcon: Icon(Icons.search, color: AppColors.outline),
+                fillColor: AppColors.surfaceContainerLow,
+                filled: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.hairlineBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.hairlineBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
+                        icon: Icon(Icons.clear, size: 18, color: AppColors.outline),
                         onPressed: () => setState(() => _searchQuery = ''),
                       )
                     : null,
@@ -103,9 +122,13 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
                       label: Text(cat),
                       selected: isSelected,
                       onSelected: (_) => setState(() => _selectedCategory = cat),
-                      selectedColor: AppColors.primaryContainer,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceContainerLow,
+                      side: BorderSide(
+                        color: isSelected ? AppColors.primary : AppColors.hairlineBorder,
+                      ),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.onSurface,
+                        color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 12,
                       ),
@@ -120,12 +143,20 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surfaceContainerHigh,
+                color: AppColors.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.hairlineBorder),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.smart_display, size: 24, color: AppColors.tertiaryContainer),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.tertiaryContainer.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.smart_display, size: 24, color: AppColors.tertiary),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -135,6 +166,7 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
                           'Edukační kanál Paragraf v kapse',
                           style: AppTypography.labelButton(color: AppColors.primary),
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           'Krátká úderná videa a textové vysvětlivky bez právnického žargonu.',
                           style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
@@ -163,6 +195,11 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Card(
+                    color: AppColors.surfaceContainerLowest,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: AppColors.hairlineBorder),
+                    ),
                     child: InkWell(
                       onTap: () {
                         Navigator.of(context).push(
@@ -176,38 +213,45 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Row(
-                                  children: [
-                                    StatuteBadge(text: item.shortStatute),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceContainerHigh,
-                                        borderRadius: BorderRadius.circular(999),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      StatuteBadge(text: item.shortStatute),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surfaceContainerHigh,
+                                          borderRadius: BorderRadius.circular(999),
+                                          border: Border.all(color: AppColors.hairlineBorder),
+                                        ),
+                                        child: Text(
+                                          item.category,
+                                          style: AppTypography.labelBadge(color: AppColors.onSurface),
+                                        ),
                                       ),
-                                      child: Text(
-                                        item.category,
-                                        style: AppTypography.labelBadge(color: AppColors.onSurfaceVariant),
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.timer, size: 14, color: AppColors.tertiaryContainer),
+                                    Icon(Icons.timer, size: 14, color: AppColors.tertiary),
                                     const SizedBox(width: 4),
                                     Text(
                                       item.videoDuration,
-                                      style: AppTypography.labelBadge(color: AppColors.tertiaryContainer),
+                                      style: AppTypography.labelBadge(color: AppColors.tertiary),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Text(
                               item.title,
                               style: AppTypography.headlineSm(color: AppColors.onSurface),
@@ -219,21 +263,21 @@ class _ExplanationsScreenState extends State<ExplanationsScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.play_circle_fill, size: 16, color: AppColors.tertiaryContainer),
+                                    Icon(Icons.play_circle_fill, size: 16, color: AppColors.tertiary),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Video výklad k dispozici',
-                                      style: AppTypography.labelBadge(color: AppColors.tertiaryContainer),
+                                      style: AppTypography.labelBadge(color: AppColors.tertiary),
                                     ),
                                   ],
                                 ),
-                                const Icon(Icons.chevron_right, size: 18, color: AppColors.primary),
+                                Icon(Icons.chevron_right, size: 18, color: AppColors.primary),
                               ],
                             ),
                           ],

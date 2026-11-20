@@ -9,6 +9,7 @@ import '../widgets/app_logo_action.dart';
 import '../widgets/hours_progress_bar.dart';
 import 'contract_detail_screen.dart';
 import 'contract_questionnaire_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final AppState appState;
@@ -42,6 +43,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppColors.isDark = isDark;
     return ListenableBuilder(
       listenable: widget.appState,
       builder: (context, _) {
@@ -79,8 +82,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            actions: const [
-              AppLogoAction(),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.settings_outlined, color: AppColors.primary),
+                tooltip: 'Nastavení aplikace',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    SettingsScreen.route(widget.appState),
+                  );
+                },
+              ),
+              const AppLogoAction(),
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
@@ -124,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: AppColors.secondaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.lock,
                             size: 20,
                             color: AppColors.onSecondaryContainer,
@@ -190,8 +202,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            height: 120,
-                            padding: const EdgeInsets.all(14),
+                            constraints: const BoxConstraints(minHeight: 120),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
                               color: AppColors.primaryContainer,
                               borderRadius: BorderRadius.circular(16),
@@ -228,13 +240,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         color: Colors.white,
                                       ),
                                     ),
-                                    const Icon(
+                                    Icon(
                                       Icons.arrow_forward,
                                       size: 18,
                                       color: AppColors.onPrimaryContainer,
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -264,8 +277,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onTap: widget.onNavigateToCalculator,
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            height: 120,
-                            padding: const EdgeInsets.all(14),
+                            constraints: const BoxConstraints(minHeight: 120),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(16),
@@ -295,7 +308,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         color: AppColors.surfaceContainerHigh,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.calculate,
                                         size: 20,
                                         color: AppColors.primary,
@@ -319,6 +332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -360,11 +374,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Container(
                           width: 32,
                           height: 32,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.primaryFixed,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.verified,
                             size: 18,
                             color: AppColors.onPrimaryFixed,
@@ -387,7 +401,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Container(
                                     width: 6,
                                     height: 6,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       color: AppColors.secondary,
                                       shape: BoxShape.circle,
                                     ),
@@ -413,35 +427,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            _showArchived
-                                ? 'Archivované smlouvy'
-                                : 'Aktivní smlouvy',
-                            style: AppTypography.headlineLg(
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '${contracts.length}',
-                              style: AppTypography.labelBadge(
-                                color: AppColors.onSurfaceVariant,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _showArchived
+                                    ? 'Archivované smlouvy'
+                                    : 'Aktivní smlouvy',
+                                style: AppTypography.headlineLg(
+                                  color: AppColors.onSurface,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                '${contracts.length}',
+                                style: AppTypography.labelBadge(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () {
                           setState(() => _showArchived = !_showArchived);
@@ -474,7 +494,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.description_outlined,
                             size: 40,
                             color: AppColors.outline,
@@ -524,11 +544,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Container(
                           width: 38,
                           height: 38,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.surfaceContainerLowest,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.lightbulb,
                             size: 20,
                             color: AppColors.primary,
@@ -593,19 +613,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Warning Banner for HPP probation or similar alerts
-          if (contract.contractType == ContractType.hpp &&
-              contract.daysRemainingInProbation != null &&
-              contract.daysRemainingInProbation! > 0)
+          // Warning Banner when 7 days or fewer remain until end of probation period
+          if (contract.daysRemainingInProbation != null &&
+              contract.daysRemainingInProbation! <= 7 &&
+              contract.daysRemainingInProbation! >= 0)
             Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
                 color: AppColors.errorContainer,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning, size: 18, color: AppColors.error),
+                  Icon(Icons.warning_amber_rounded, size: 20, color: AppColors.error),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -618,7 +638,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ).copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          'Zkušební doba končí za ${contract.daysRemainingInProbation} dní. Do té doby lze poměr zrušit okamžitě.',
+                          contract.daysRemainingInProbation == 0
+                              ? 'Zkušební doba končí dnes (§ 35 ZP). Dnes je poslední den, kdy lze poměr zrušit okamžitě.'
+                              : (contract.daysRemainingInProbation == 1
+                                  ? 'Zkušební doba končí zítra (zbývá 1 den). Do té doby lze poměr zrušit okamžitě.'
+                                  : 'Zkušební doba končí za ${contract.daysRemainingInProbation} dní (§ 35 ZP). Do té doby lze poměr zrušit okamžitě.'),
                           style: AppTypography.bodySm(
                             color: AppColors.onErrorContainer,
                           ),
@@ -630,55 +654,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: contract.contractType == ContractType.dpp
-                                ? AppColors.surfaceContainer
-                                : AppColors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            contract.contractType == ContractType.dpp
-                                ? Icons.terminal
-                                : Icons.code,
-                            size: 24,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                ContractDetailScreen.route(
+                  contract,
+                  widget.appState,
+                ),
+              );
+            },
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Row(
                           children: [
-                            Text(
-                              contract.jobTitle,
-                              style: AppTypography.headlineSm(
-                                color: AppColors.onSurface,
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: contract.contractType == ContractType.dpp
+                                    ? AppColors.surfaceContainer
+                                    : AppColors.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              child: Icon(
+                                contract.contractType == ContractType.dpp
+                                    ? Icons.terminal
+                                    : Icons.code,
+                              size: 24,
+                              color: AppColors.primary,
                             ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  contract.jobTitle,
+                                  style: AppTypography.headlineSm(
+                                    color: AppColors.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  contract.companyName,
+                                  style: AppTypography.bodySm(
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (contract.daysRemainingInProbation != null &&
+                        contract.daysRemainingInProbation! <= 7 &&
+                        contract.daysRemainingInProbation! >= 0) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorContainer,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.hourglass_bottom, size: 12, color: AppColors.error),
+                            const SizedBox(width: 4),
                             Text(
-                              contract.companyName,
-                              style: AppTypography.bodySm(
-                                color: AppColors.onSurfaceVariant,
-                              ),
+                              contract.daysRemainingInProbation == 0
+                                  ? 'Zkušební doba: dnes končí'
+                                  : 'Zkušební doba: zbývá ${contract.daysRemainingInProbation} d.',
+                              style: AppTypography.labelBadge(color: AppColors.error)
+                                  .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -690,13 +761,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : AppColors.primaryFixed,
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: Text(
-                        contract.contractType.label,
-                        style: AppTypography.labelBadge(
-                          color: contract.contractType == ContractType.dpp
-                              ? AppColors.onSecondaryContainer
-                              : AppColors.onPrimaryFixed,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            contract.contractType.label,
+                            style: AppTypography.labelBadge(
+                              color: contract.contractType == ContractType.dpp
+                                  ? AppColors.onSecondaryContainer
+                                  : AppColors.onPrimaryFixed,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 14,
+                            color: contract.contractType == ContractType.dpp
+                                ? AppColors.onSecondaryContainer
+                                : AppColors.onPrimaryFixed,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -801,33 +885,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 10),
                   HoursProgressBar(currentHours: totalHours, maxHours: 300),
                 ],
+              ],
+            ),
+          ),
+        ),
 
-                const SizedBox(height: 10),
-                const Divider(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              const Divider(),
 
                 // Safe check footer row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.verified,
-                          size: 16,
-                          color: AppColors.secondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Kompletně zmapováno (${contract.evaluationScore} %)',
-                          style: AppTypography.labelBadge(
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            size: 16,
                             color: AppColors.secondary,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Kompletně zmapováno (${contract.evaluationScore} %)',
+                              style: AppTypography.labelBadge(
+                                color: AppColors.secondary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     InkWell(
                       onTap: () => _togglePreview(contract.id),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             isExpanded ? 'Zavřít náhled' : 'Náhled smlouvy',
@@ -866,7 +965,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.description,
                                   size: 16,
                                   color: AppColors.primary,
@@ -912,7 +1011,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         _buildParamRow(
                           'Zkušební doba:',
-                          '${contract.probationPeriodMonths} měsíce',
+                          contract.daysRemainingInProbation != null &&
+                                  contract.daysRemainingInProbation! <= 7 &&
+                                  contract.daysRemainingInProbation! >= 0
+                              ? '${contract.probationPeriodMonths} měsíce (⚠️ zbývá ${contract.daysRemainingInProbation} dní)'
+                              : '${contract.probationPeriodMonths} měsíce',
                         ),
                         _buildParamRow('Úvazek / rozsah:', contract.contractType.description),
                         if (contract.notes.isNotEmpty) ...[
@@ -927,7 +1030,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.edit_note,
                                   size: 16,
                                   color: AppColors.primary,

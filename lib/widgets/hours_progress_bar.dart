@@ -31,22 +31,28 @@ class HoursProgressBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.timelapse,
-                    size: 14,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: AppTypography.labelLaw(
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.timelapse,
+                      size: 14,
                       color: AppColors.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: AppTypography.labelLaw(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${currentHours.toStringAsFixed(currentHours.truncateToDouble() == currentHours ? 0 : 1)} / ${maxHours.toInt()} hod',
                 style: AppTypography.labelLaw(
@@ -73,13 +79,20 @@ class HoursProgressBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Čerpáno ${percentage.toStringAsFixed(0)} %',
-                style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+              Flexible(
+                child: Text(
+                  'Čerpáno ${percentage.toStringAsFixed(0)} %',
+                  style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Text(
-                'Zbývá ${remaining.toStringAsFixed(remaining.truncateToDouble() == remaining ? 0 : 1)} hodin',
-                style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Zbývá ${remaining.toStringAsFixed(remaining.truncateToDouble() == remaining ? 0 : 1)} hodin',
+                  style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

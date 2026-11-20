@@ -18,6 +18,8 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen> {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppColors.isDark = isDark;
     return ListenableBuilder(
       listenable: widget.appState,
       builder: (context, _) {
@@ -41,7 +43,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               color: AppColors.surface.withValues(alpha: 0.95),
-              border: const Border(
+              border: Border(
                 top: BorderSide(color: AppColors.hairlineBorder, width: 1),
               ),
               boxShadow: [

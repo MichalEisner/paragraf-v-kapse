@@ -26,7 +26,7 @@ class ScoreRing extends StatelessWidget {
           CircularProgressIndicator(
             value: 1.0,
             strokeWidth: strokeWidth,
-            valueColor: const AlwaysStoppedAnimation<Color>(
+            valueColor: AlwaysStoppedAnimation<Color>(
               AppColors.surfaceContainer,
             ),
           ),

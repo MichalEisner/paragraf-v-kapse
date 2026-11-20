@@ -107,7 +107,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              const Icon(Icons.tune, color: AppColors.secondary, size: 20),
+              Icon(Icons.tune, color: AppColors.secondary, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -182,7 +182,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              const Icon(Icons.tune, color: AppColors.secondary, size: 20),
+              Icon(Icons.tune, color: AppColors.secondary, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text('Modelování sazeb pro děti', style: AppTypography.headlineSm(color: AppColors.primary)),
@@ -277,6 +277,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       symbol: 'Kč',
       decimalDigits: 0,
     );
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppColors.isDark = isDark;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -407,8 +410,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         Text('Zadání příjmu', style: AppTypography.headlineSm(color: AppColors.onSurface)),
                         Container(
@@ -418,6 +424,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               InkWell(
                                 onTap: () => _switchInputMode(true),
@@ -483,13 +490,33 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('ODPRACOVÁNO', style: AppTypography.labelBadge(color: AppColors.onSurfaceVariant)),
+                                    Expanded(
+                                      child: Text(
+                                        'ODPRACOVÁNO',
+                                        style: AppTypography.labelBadge(color: AppColors.onSurfaceVariant),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
                                     if (_currentContract == ContractType.dpp)
-                                      Text('Max 300 h/rok', style: AppTypography.labelLaw(color: AppColors.secondary))
+                                      Flexible(
+                                        child: Text(
+                                          'Max 300 h/rok',
+                                          style: AppTypography.labelLaw(color: AppColors.secondary),
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      )
                                     else if (_currentContract == ContractType.dpc)
-                                      Text('Max 20 h/týden', style: AppTypography.labelLaw(color: AppColors.secondary)),
+                                      Flexible(
+                                        child: Text(
+                                          'Max 20 h/týden',
+                                          style: AppTypography.labelLaw(color: AppColors.secondary),
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
@@ -546,7 +573,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                           },
                           child: Row(
                             children: [
-                              const Icon(Icons.refresh, size: 14, color: AppColors.secondary),
+                              Icon(Icons.refresh, size: 14, color: AppColors.secondary),
                               const SizedBox(width: 4),
                               Text(
                                 'Výchozí sazby',
@@ -800,7 +827,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [AppColors.primaryContainer, AppColors.primary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -910,10 +937,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Uplatněná sleva na poplatníka / invaliditu',
-                              style: AppTypography.bodySm(color: AppColors.secondary),
+                            Expanded(
+                              child: Text(
+                                'Uplatněná sleva na poplatníka / invaliditu',
+                                style: AppTypography.bodySm(color: AppColors.secondary),
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '- ${currencyFmt.format(result.appliedTaxRelief)}',
                               style: AppTypography.bodySm(color: AppColors.secondary),
@@ -928,10 +958,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Sleva na děti ($_childrenCount)',
-                              style: AppTypography.bodySm(color: AppColors.secondary),
+                            Expanded(
+                              child: Text(
+                                'Sleva na děti ($_childrenCount)',
+                                style: AppTypography.bodySm(color: AppColors.secondary),
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '- ${currencyFmt.format(result.appliedChildRelief)}',
                               style: AppTypography.bodySm(color: AppColors.secondary),
@@ -946,10 +979,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Vyplacený daňový bonus',
-                              style: AppTypography.labelButton(color: AppColors.secondary),
+                            Expanded(
+                              child: Text(
+                                'Vyplacený daňový bonus',
+                                style: AppTypography.labelButton(color: AppColors.secondary),
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '+ ${currencyFmt.format(result.taxBonus)}',
                               style: AppTypography.labelButton(color: AppColors.secondary),
@@ -963,7 +999,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Výsledná sražená daň', style: AppTypography.labelButton(color: AppColors.onSurface)),
+                          Expanded(
+                            child: Text('Výsledná sražená daň', style: AppTypography.labelButton(color: AppColors.onSurface)),
+                          ),
+                          const SizedBox(width: 8),
                           Text(
                             currencyFmt.format(result.taxFinal),
                             style: AppTypography.labelButton(color: AppColors.tertiaryContainer),
@@ -1011,6 +1050,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: isBold
@@ -1075,7 +1115,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.tune, size: 18, color: AppColors.secondary),
+                icon: Icon(Icons.tune, size: 18, color: AppColors.secondary),
                 padding: const EdgeInsets.all(4),
                 constraints: const BoxConstraints(),
                 tooltip: 'Modelovat sazbu',

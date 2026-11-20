@@ -4,17 +4,17 @@ import '../theme/app_typography.dart';
 
 class StatuteBadge extends StatelessWidget {
   final String text;
-  final Color backgroundColor;
-  final Color textColor;
-  final Color borderColor;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final Color? borderColor;
   final EdgeInsetsGeometry padding;
 
   const StatuteBadge({
     super.key,
     required this.text,
-    this.backgroundColor = AppColors.surfaceContainerHigh,
-    this.textColor = AppColors.primary,
-    this.borderColor = AppColors.outlineVariant,
+    this.backgroundColor,
+    this.textColor,
+    this.borderColor,
     this.padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
   });
 
@@ -23,13 +23,13 @@ class StatuteBadge extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(9999),
-        border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1),
+        color: backgroundColor ?? AppColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor ?? AppColors.outlineVariant),
       ),
       child: Text(
         text,
-        style: AppTypography.labelLaw(color: textColor),
+        style: AppTypography.labelLaw(color: textColor ?? AppColors.primary),
       ),
     );
   }

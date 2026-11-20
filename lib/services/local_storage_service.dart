@@ -1,11 +1,56 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/contract_model.dart';
+import '../models/feedback_ticket_model.dart';
+import '../models/notification_settings_model.dart';
 import '../models/work_shift_model.dart';
 
 class LocalStorageService {
   static const String _contractsKey = 'paragraf_contracts';
   static const String _shiftsKey = 'paragraf_shifts';
+  static const String _themeModeKey = 'paragraf_theme_mode';
+  static const String _notificationSettingsKey = 'paragraf_notifications';
+  static const String _feedbackTicketsKey = 'paragraf_feedback_tickets';
+
+  Future<ThemeMode> loadThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final modeStr = prefs.getString(_themeModeKey);
+      if (modeStr == 'dark') return ThemeMode.dark;
+      if (modeStr == 'light') return ThemeMode.light;
+    } catch (_) {}
+    return ThemeMode.system;
+  }
+
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final val = mode == ThemeMode.dark
+          ? 'dark'
+          : (mode == ThemeMode.light ? 'light' : 'system');
+      await prefs.setString(_themeModeKey, val);
+    } catch (_) {}
+  }
+
+  Future<NotificationSettings> loadNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_notificationSettingsKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final Map<String, dynamic> map = jsonDecode(jsonStr) as Map<String, dynamic>;
+        return NotificationSettings.fromJson(map);
+      }
+    } catch (_) {}
+    return const NotificationSettings();
+  }
+
+  Future<void> saveNotificationSettings(NotificationSettings settings) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_notificationSettingsKey, jsonEncode(settings.toJson()));
+    } catch (_) {}
+  }
 
   Future<List<Contract>> loadContracts() async {
     try {
@@ -48,6 +93,28 @@ class LocalStorageService {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = jsonEncode(shifts.map((s) => s.toJson()).toList());
       await prefs.setString(_shiftsKey, jsonStr);
+    } catch (_) {}
+  }
+
+  Future<List<FeedbackTicket>> loadFeedbackTickets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? jsonStr = prefs.getString(_feedbackTicketsKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> list = jsonDecode(jsonStr) as List<dynamic>;
+        return list
+            .map((item) => FeedbackTicket.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<void> saveFeedbackTickets(List<FeedbackTicket> tickets) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(tickets.map((t) => t.toJson()).toList());
+      await prefs.setString(_feedbackTicketsKey, jsonStr);
     } catch (_) {}
   }
 
@@ -95,6 +162,7 @@ class LocalStorageService {
         weeklyHours: 40,
         hasNonCompete: true,
         nonCompeteCompensationPercent: 50,
+        hasTaxDeclaration: true,
         notes: 'Dovolená 25 dní (5 týdnů). Příspěvek na stravování.',
         evaluationScore: 92,
         verifiedItemsCount: 9,

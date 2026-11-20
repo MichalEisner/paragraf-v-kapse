@@ -29,6 +29,10 @@ class Contract {
   final int totalItemsCount;
   final bool isArchived;
   final Map<String, String> checkedClauses;
+  final bool hasTaxDeclaration; // Sleva na poplatníka (prohlášení k dani / růžovka)
+  final int taxReliefChildrenCount; // Počet dětí pro daňové zvýhodnění (§ 35c ZDP)
+  final bool isStudent; // Status studenta do 26 let
+  final bool hasDisability; // Sleva na invaliditu
 
   const Contract({
     required this.id,
@@ -50,7 +54,14 @@ class Contract {
     this.totalItemsCount = 10,
     this.isArchived = false,
     this.checkedClauses = const {},
+    this.hasTaxDeclaration = false,
+    this.taxReliefChildrenCount = 0,
+    this.isStudent = false,
+    this.hasDisability = false,
   });
+
+  /// Is contract for indefinite period
+  bool get isIndefinite => endDate == null;
 
   /// Days remaining until contract ends (or null if indefinite)
   int? get daysUntilEnd {
@@ -61,7 +72,7 @@ class Contract {
     return end.difference(today).inDays;
   }
 
-  /// Days remaining in probation period
+  /// Days remaining in probation period (null if no probation or already ended)
   int? get daysRemainingInProbation {
     if (probationPeriodMonths <= 0) return null;
     final probationEnd = DateTime(
@@ -72,7 +83,7 @@ class Contract {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final diff = probationEnd.difference(today).inDays;
-    return diff >= 0 ? diff : 0;
+    return diff >= 0 ? diff : null;
   }
 
   Contract copyWith({
@@ -95,6 +106,10 @@ class Contract {
     int? totalItemsCount,
     bool? isArchived,
     Map<String, String>? checkedClauses,
+    bool? hasTaxDeclaration,
+    int? taxReliefChildrenCount,
+    bool? isStudent,
+    bool? hasDisability,
   }) {
     return Contract(
       id: id ?? this.id,
@@ -117,6 +132,10 @@ class Contract {
       totalItemsCount: totalItemsCount ?? this.totalItemsCount,
       isArchived: isArchived ?? this.isArchived,
       checkedClauses: checkedClauses ?? this.checkedClauses,
+      hasTaxDeclaration: hasTaxDeclaration ?? this.hasTaxDeclaration,
+      taxReliefChildrenCount: taxReliefChildrenCount ?? this.taxReliefChildrenCount,
+      isStudent: isStudent ?? this.isStudent,
+      hasDisability: hasDisability ?? this.hasDisability,
     );
   }
 
@@ -141,6 +160,10 @@ class Contract {
       'totalItemsCount': totalItemsCount,
       'isArchived': isArchived,
       'checkedClauses': checkedClauses,
+      'hasTaxDeclaration': hasTaxDeclaration,
+      'taxReliefChildrenCount': taxReliefChildrenCount,
+      'isStudent': isStudent,
+      'hasDisability': hasDisability,
     };
   }
 
@@ -172,6 +195,10 @@ class Contract {
       checkedClauses: Map<String, String>.from(
         json['checkedClauses'] as Map? ?? {},
       ),
+      hasTaxDeclaration: json['hasTaxDeclaration'] as bool? ?? false,
+      taxReliefChildrenCount: json['taxReliefChildrenCount'] as int? ?? 0,
+      isStudent: json['isStudent'] as bool? ?? false,
+      hasDisability: json['hasDisability'] as bool? ?? false,
     );
   }
 }

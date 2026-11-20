@@ -57,11 +57,13 @@ class ClauseDetailScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: AppColors.secondaryFixed),
+            Icon(Icons.check_circle, color: AppColors.secondaryFixed),
             const SizedBox(width: 8),
-            Text(
-              'Bezpečná formulace zkopírována do schránky',
-              style: AppTypography.bodySm(color: AppColors.inverseOnSurface),
+            Expanded(
+              child: Text(
+                'Bezpečná formulace zkopírována do schránky',
+                style: AppTypography.bodySm(color: AppColors.inverseOnSurface),
+              ),
             ),
           ],
         ),
@@ -71,6 +73,8 @@ class ClauseDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    AppColors.isDark = isDark;
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -117,7 +121,7 @@ class ClauseDetailScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.offline_pin,
                       size: 14,
                       color: AppColors.secondary,
@@ -140,7 +144,7 @@ class ClauseDetailScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.gavel, size: 16, color: AppColors.primary),
+                Icon(Icons.gavel, size: 16, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -197,7 +201,7 @@ class ClauseDetailScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.smart_display,
                                   size: 14,
                                   color: AppColors.onTertiary,
@@ -227,7 +231,7 @@ class ClauseDetailScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.timer,
                                   size: 12,
                                   color: AppColors.tertiaryFixedDim,
@@ -270,7 +274,7 @@ class ClauseDetailScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(
+                              Icon(
                                 Icons.open_in_new,
                                 size: 14,
                                 color: AppColors.primaryFixedDim,
@@ -294,16 +298,18 @@ class ClauseDetailScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.psychology_alt,
                           size: 22,
                           color: AppColors.primary,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Co to v praxi znamená pro vás?',
-                          style: AppTypography.headlineSm(
-                            color: AppColors.primary,
+                        Expanded(
+                          child: Text(
+                            'Co to v praxi znamená pro vás?',
+                            style: AppTypography.headlineSm(
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       ],
@@ -323,7 +329,7 @@ class ClauseDetailScreen extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.lightbulb,
                             size: 18,
                             color: AppColors.secondary,
@@ -375,7 +381,7 @@ class ClauseDetailScreen extends StatelessWidget {
                           Container(
                             width: 24,
                             height: 24,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
                             ),
@@ -402,7 +408,7 @@ class ClauseDetailScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.only(left: 10),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(color: AppColors.primary, width: 2),
                       ),
@@ -428,16 +434,18 @@ class ClauseDetailScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.check_circle_outline,
                             color: AppColors.secondary,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Doporučená bezpečná formulace',
-                            style: AppTypography.headlineSm(
-                              color: AppColors.secondary,
+                          Expanded(
+                            child: Text(
+                              'Doporučená bezpečná formulace',
+                              style: AppTypography.headlineSm(
+                                color: AppColors.secondary,
+                              ),
                             ),
                           ),
                         ],
@@ -451,7 +459,10 @@ class ClauseDetailScreen extends StatelessWidget {
                       OutlinedButton.icon(
                         onPressed: () => _copySafeClause(context),
                         icon: const Icon(Icons.copy, size: 16),
-                        label: const Text('Zkopírovat bezpečnou formulaci'),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Zkopírovat bezpečnou formulaci'),
+                        ),
                       ),
                     ],
                   ),
@@ -469,7 +480,7 @@ class ClauseDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.info, size: 14, color: AppColors.secondary),
+                Icon(Icons.info, size: 14, color: AppColors.secondary),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
