@@ -288,7 +288,18 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     super.dispose();
   }
 
-  void _sendReply() {
+  void _sendReply([FeedbackTicket? ticket]) {
+    if (ticket != null && (ticket.status == TicketStatus.resolved || ticket.status == TicketStatus.closed)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.secondary,
+          behavior: SnackBarBehavior.floating,
+          content: const Text('Podnět byl již vyřešen. Do vyřešeného podnětu nelze psát.'),
+        ),
+      );
+      return;
+    }
+
     if (!_isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -388,6 +399,28 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                   );
                 },
               ),
+              if (ticket.status == TicketStatus.resolved || ticket.status == TicketStatus.closed)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.replay, color: AppColors.primary, size: 20),
+                  ),
+                  title: const Text('Znovu otevřít podnět'),
+                  subtitle: const Text('Vrátí stav na „V řešení“ a odemkne psaní zpráv.'),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    widget.appState.updateTicketStatus(ticket.id, TicketStatus.inProgress);
+                    widget.appState.addMessageToTicket(
+                      ticket.id,
+                      'Podnět byl administrátorem znovu otevřen.',
+                      isAdmin: true,
+                    );
+                  },
+                ),
               const Divider(),
               ListTile(
                 leading: Container(
@@ -598,118 +631,171 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                 ),
               ),
 
-              // Offline Warning Banner
-              if (!_isOnline)
+              // Bottom Input Bar OR Resolved Notice
+              if (ticket.status == TicketStatus.resolved || ticket.status == TicketStatus.closed)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+                    color: AppColors.surfaceContainerLowest,
+                    border: Border(top: BorderSide(color: AppColors.hairlineBorder)),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.wifi_off_rounded, size: 20, color: AppColors.error),
+                  child: SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Zařízení není připojeno k internetu',
-                              style: AppTypography.labelLaw(color: AppColors.onErrorContainer)
-                                  .copyWith(fontWeight: FontWeight.bold),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Zprávy s administrátorem vyžadují internetové připojení. Jakmile se telefon připojí, chat bude opět aktivní.',
-                              style: AppTypography.bodySm(color: AppColors.onErrorContainer),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      IconButton(
-                        tooltip: 'Zkontrolovat připojení',
-                        icon: _isCheckingConnectivity
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.refresh, size: 18),
-                        onPressed: _isCheckingConnectivity ? null : _checkConnectivity,
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Bottom Input Bar
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
-                  border: Border(top: BorderSide(color: AppColors.hairlineBorder)),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _replyController,
-                          enabled: _isOnline,
-                          style: AppTypography.bodyMd(color: _isOnline ? AppColors.onSurface : AppColors.outline),
-                          decoration: InputDecoration(
-                            hintText: _isOnline
-                                ? 'Napsat zprávu pro administrátora...'
-                                : 'Zprávy nelze odesílat bez připojení k internetu',
-                            hintStyle: AppTypography.bodySm(color: AppColors.outline),
-                            fillColor: _isOnline ? AppColors.surfaceContainerLow : AppColors.surfaceContainerLowest,
-                            filled: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: AppColors.hairlineBorder),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: AppColors.hairlineBorder),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: AppColors.hairlineBorder.withValues(alpha: 0.5)),
+                            child: Icon(Icons.check_circle, size: 20, color: AppColors.secondary),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Podnět byl vyřešen',
+                                  style: AppTypography.labelLaw(color: AppColors.secondary)
+                                      .copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Historie konverzace zůstává uložena pro vaši kontrolu. Další zprávy do tohoto chatu již nelze odesílat.',
+                                  style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                                ),
+                              ],
                             ),
                           ),
-                          onSubmitted: _isOnline ? (_) => _sendReply() : null,
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: _isOnline ? _sendReply : null,
-                        icon: Icon(_isOnline ? Icons.send : Icons.cloud_off, size: 18),
-                        style: IconButton.styleFrom(
-                          backgroundColor: _isOnline ? AppColors.primaryContainer : AppColors.outlineVariant,
-                          foregroundColor: _isOnline ? Colors.white : AppColors.outline,
+                    ),
+                  ),
+                )
+              else ...[
+                // Offline Warning Banner
+                if (!_isOnline)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.wifi_off_rounded, size: 20, color: AppColors.error),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Zařízení není připojeno k internetu',
+                                style: AppTypography.labelLaw(color: AppColors.onErrorContainer)
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Zprávy s administrátorem vyžadují internetové připojení. Jakmile se telefon připojí, chat bude opět aktivní.',
+                                style: AppTypography.bodySm(color: AppColors.onErrorContainer),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton(
+                          tooltip: 'Zkontrolovat připojení',
+                          icon: _isCheckingConnectivity
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.refresh, size: 18),
+                          onPressed: _isCheckingConnectivity ? null : _checkConnectivity,
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Bottom Input Bar
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    border: Border(top: BorderSide(color: AppColors.hairlineBorder)),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _replyController,
+                            enabled: _isOnline,
+                            style: AppTypography.bodyMd(color: _isOnline ? AppColors.onSurface : AppColors.outline),
+                            decoration: InputDecoration(
+                              hintText: _isOnline
+                                  ? 'Napsat zprávu pro administrátora...'
+                                  : 'Zprávy nelze odesílat bez připojení k internetu',
+                              hintStyle: AppTypography.bodySm(color: AppColors.outline),
+                              fillColor: _isOnline ? AppColors.surfaceContainerLow : AppColors.surfaceContainerLowest,
+                              filled: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(color: AppColors.hairlineBorder),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(color: AppColors.hairlineBorder),
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(color: AppColors.hairlineBorder.withValues(alpha: 0.5)),
+                              ),
+                            ),
+                            onSubmitted: _isOnline ? (_) => _sendReply(ticket) : null,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _isOnline ? () => _sendReply(ticket) : null,
+                          icon: Icon(_isOnline ? Icons.send : Icons.cloud_off, size: 18),
+                          style: IconButton.styleFrom(
+                            backgroundColor: _isOnline ? AppColors.primaryContainer : AppColors.outlineVariant,
+                            foregroundColor: _isOnline ? Colors.white : AppColors.outline,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         );
