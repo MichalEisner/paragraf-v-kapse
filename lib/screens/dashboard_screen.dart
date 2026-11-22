@@ -824,59 +824,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              contract.contractType == ContractType.hpp
-                                  ? 'Dovolená ročně'
-                                  : 'Konec dohody',
-                              style: AppTypography.bodySm(
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  contract.contractType == ContractType.hpp
-                                      ? Icons.beach_access
-                                      : Icons.schedule,
-                                  size: 16,
-                                  color: contract.contractType == ContractType.hpp
-                                      ? AppColors.primary
-                                      : AppColors.secondary,
+                    if (contract.contractType != ContractType.hpp) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Konec dohody',
+                                style: AppTypography.bodySm(
+                                  color: AppColors.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      contract.contractType == ContractType.hpp
-                                          ? '25 dní (5 týdnů)'
-                                          : (contract.daysUntilEnd != null
-                                              ? '${contract.daysUntilEnd} dní'
-                                              : 'Neurčitá'),
-                                      style: AppTypography.headlineSm(
-                                        color: AppColors.onSurface,
+                              ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color: AppColors.secondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        contract.daysUntilEnd != null
+                                            ? '${contract.daysUntilEnd} dní'
+                                            : 'Neurčitá',
+                                        style: AppTypography.headlineSm(
+                                          color: AppColors.onSurface,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
 
@@ -905,16 +899,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.verified,
+                            contract.verifiedItemsCount >= contract.totalItemsCount
+                                ? Icons.verified
+                                : (contract.verifiedItemsCount == 0
+                                    ? Icons.rule
+                                    : Icons.timelapse),
                             size: 16,
-                            color: AppColors.secondary,
+                            color: contract.verifiedItemsCount >= contract.totalItemsCount
+                                ? AppColors.secondary
+                                : AppColors.primary,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Kompletně zmapováno (${contract.evaluationScore} %)',
+                              contract.verifiedItemsCount >= contract.totalItemsCount
+                                  ? 'Kompletně zmapováno (${contract.evaluationScore} %)'
+                                  : (contract.verifiedItemsCount == 0
+                                      ? 'Nezkontrolováno (0/${contract.totalItemsCount})'
+                                      : 'Rozpracováno (${contract.verifiedItemsCount}/${contract.totalItemsCount} ověřeno)'),
                               style: AppTypography.labelBadge(
-                                color: AppColors.secondary,
+                                color: contract.verifiedItemsCount >= contract.totalItemsCount
+                                    ? AppColors.secondary
+                                    : AppColors.primary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),

@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/contract_model.dart';
 import '../models/feedback_ticket_model.dart';
-import '../models/work_shift_model.dart';
 import 'feedback_history_screen.dart';
 import '../services/backup_crypto_service.dart';
 import '../services/native_bridge_service.dart';
+import '../services/notification_scheduler_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -148,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         backupString: encryptedString,
                         fileName: fileName,
                       );
-                      if (!mounted) return;
+                      if (!mounted || !ctx.mounted) return;
                       Navigator.of(ctx).pop();
                       _showBackupCreatedModal(file.path, encryptedString);
                     } catch (e) {
@@ -544,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       newShifts: payload.shifts,
                       replace: replace,
                     );
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -576,11 +574,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Bug Report Dialog
-  void _showBugReportDialog() {
+  Future<void> _showBugReportDialog() async {
+    final isOnlineInitial = await NativeBridgeService.isInternetConnected();
+    if (!mounted) return;
+
+    if (!isOnlineInitial) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Zařízení je offline',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pro odeslání podnětu nebo nahlášení chyby aplikace je nutné mít aktivní internetové připojení.',
+                style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.hairlineBorder),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 18, color: AppColors.outline),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Zkontrolujte připojení k Wi-Fi nebo mobilním datům a zkuste to znovu.',
+                        style: AppTypography.labelLaw(color: AppColors.outline),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Zavřít'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showBugReportDialog();
+              },
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Zkusit znovu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final titleController = TextEditingController();
     final descController = TextEditingController();
     var category = 'Chyba v aplikaci';
     var includeDiagnostics = true;
+    var isCheckingConnection = false;
+    var isSubmitting = false;
+    var isOnline = true;
 
     showDialog(
       context: context,
@@ -614,6 +693,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (!isOnline) ...[
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorContainer,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Zařízení ztratilo připojení k internetu. Odeslání není možné.',
+                                style: AppTypography.bodySm(color: AppColors.onErrorContainer),
+                              ),
+                            ),
+                            IconButton(
+                              icon: isCheckingConnection
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.refresh, size: 18),
+                              onPressed: isCheckingConnection
+                                  ? null
+                                  : () async {
+                                      setDialogState(() => isCheckingConnection = true);
+                                      final check = await NativeBridgeService.isInternetConnected();
+                                      setDialogState(() {
+                                        isOnline = check;
+                                        isCheckingConnection = false;
+                                      });
+                                    },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     Text(
                       'Vaše zpětná vazba pomáhá vylepšovat aplikaci pro všechny uživatele.',
                       style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
@@ -665,81 +786,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Text('Zavřít'),
                 ),
                 FilledButton.icon(
-                  icon: const Icon(Icons.send, size: 16),
+                  icon: isSubmitting
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.send, size: 16),
                   label: const Text('Odeslat'),
-                  onPressed: () {
-                    final t = titleController.text.trim();
-                    final d = descController.text.trim();
-                    if (t.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vyplňte prosím předmět hlášení.')),
-                      );
-                      return;
-                    }
-                    Navigator.of(ctx).pop();
-                    final reportId = 'POD-${(DateTime.now().millisecondsSinceEpoch % 100000).toString().padLeft(5, '0')}';
+                  onPressed: (!isOnline || isSubmitting)
+                      ? null
+                      : () async {
+                          final t = titleController.text.trim();
+                          final d = descController.text.trim();
+                          if (t.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vyplňte prosím předmět hlášení.')),
+                            );
+                            return;
+                          }
 
-                    final newTicket = FeedbackTicket(
-                      id: reportId,
-                      title: t,
-                      category: category,
-                      description: d.isNotEmpty ? d : 'Bez doplňujícího popisu.',
-                      createdAt: DateTime.now(),
-                      status: TicketStatus.submitted,
-                      includeDiagnostics: includeDiagnostics,
-                      messages: [
-                        TicketMessage(
-                          id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-                          sender: 'admin',
-                          senderName: 'Podpora Paragraf v kapse',
-                          text: 'Dobrý den, děkujeme za nahlášení. Váš podnět byl zaevidován pod číslem #$reportId a předán k prověření administrátorovi. O dalším postupu vás budeme informovat zde v historii podnětu.',
-                          timestamp: DateTime.now(),
-                        ),
-                      ],
-                    );
-
-                    widget.appState.addFeedbackTicket(newTicket);
-
-                    showDialog(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        backgroundColor: AppColors.surface,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: AppColors.secondary),
-                            const SizedBox(width: 8),
-                            const Text('Podnět zaevidován'),
-                          ],
-                        ),
-                        content: Text(
-                          'Děkujeme za váš podnět! Hlášení bylo uloženo s identifikačním kódem #$reportId. Můžete sledovat stav řešení a budoucí zprávy od administrátora v historii podnětů.',
-                          style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(c).pop(),
-                            child: const Text('Zavřít'),
-                          ),
-                          FilledButton.icon(
-                            onPressed: () {
-                              Navigator.of(c).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => FeedbackDetailScreen(
-                                    appState: widget.appState,
-                                    ticketId: reportId,
+                          setDialogState(() => isSubmitting = true);
+                          final stillOnline = await NativeBridgeService.isInternetConnected();
+                          if (!stillOnline) {
+                            setDialogState(() {
+                              isOnline = false;
+                              isSubmitting = false;
+                            });
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppColors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                  content: const Row(
+                                    children: [
+                                      Icon(Icons.wifi_off, color: Colors.white, size: 18),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text('Zařízení ztratilo připojení k internetu. Podnět nelze odeslat.'),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
-                            },
-                            icon: const Icon(Icons.forum, size: 16),
-                            label: const Text('Zobrazit podnět'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                            }
+                            return;
+                          }
+
+                          if (!ctx.mounted) return;
+                          Navigator.of(ctx).pop();
+                          final reportId = 'POD-${(DateTime.now().millisecondsSinceEpoch % 100000).toString().padLeft(5, '0')}';
+
+                          final newTicket = FeedbackTicket(
+                            id: reportId,
+                            title: t,
+                            category: category,
+                            description: d.isNotEmpty ? d : 'Bez doplňujícího popisu.',
+                            createdAt: DateTime.now(),
+                            status: TicketStatus.submitted,
+                            includeDiagnostics: includeDiagnostics,
+                            messages: [
+                              TicketMessage(
+                                id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+                                sender: 'admin',
+                                senderName: 'Podpora Paragraf v kapse',
+                                text: 'Dobrý den, děkujeme za nahlášení. Váš podnět byl zaevidován pod číslem #$reportId a předán k prověření administrátorovi. O dalším postupu vás budeme informovat zde v historii podnětu.',
+                                timestamp: DateTime.now(),
+                              ),
+                            ],
+                          );
+
+                          widget.appState.addFeedbackTicket(newTicket);
+
+                          if (context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                backgroundColor: AppColors.surface,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: AppColors.secondary),
+                                    const SizedBox(width: 8),
+                                    const Text('Podnět zaevidován'),
+                                  ],
+                                ),
+                                content: Text(
+                                  'Děkujeme za váš podnět! Hlášení bylo uloženo s identifikačním kódem #$reportId. Můžete sledovat stav řešení a budoucí zprávy od administrátora v historii podnětů.',
+                                  style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(c).pop(),
+                                    child: const Text('Zavřít'),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(c).pop();
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => FeedbackDetailScreen(
+                                            appState: widget.appState,
+                                            ticketId: reportId,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.forum, size: 16),
+                                    label: const Text('Zobrazit podnět'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
                 ),
               ],
             );
@@ -809,6 +969,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _scheduleClosedAppTestNotification() async {
+    final hasPerm = await NativeBridgeService.requestNotificationPermission();
+    if (!hasPerm) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.errorContainer,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Povolte prosím oprávnění k oznámením v nastavení.',
+                  style: AppTypography.bodySm(color: AppColors.onErrorContainer),
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'Nastavení',
+            textColor: AppColors.onErrorContainer,
+            onPressed: NativeBridgeService.openNotificationSettings,
+          ),
+        ),
+      );
+      return;
+    }
+
+    final scheduled = await NotificationSchedulerService.scheduleTestAlarm(seconds: 10);
+    if (!mounted) return;
+
+    if (scheduled) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.alarm_on, color: AppColors.secondary, size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Test na pozadí připraven',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Upozornění je naplánováno v systému Android za 10 sekund.',
+                style: AppTypography.bodySm(color: AppColors.onSurface),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.outlineVariant),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.check_circle_outline, color: AppColors.secondary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Nyní můžete aplikaci ihned zcela zavřít nebo shodit ze seznamu spuštěných aplikací. Systém telefon probudí a notifikaci spolehlivě zobrazí.',
+                        style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Rozumím, vyzkouším'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.errorContainer,
+          content: Text(
+            'Nepodařilo se naplánovat testovací upozornění.',
+            style: TextStyle(color: AppColors.onErrorContainer),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -977,11 +1249,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: const Text('Limit 300 hodin u DPP (§ 75 ZP)', style: TextStyle(fontSize: 14)),
                             subtitle: const Text('Upozornit při dosažení 80 % a 95 % ročního limitu', style: TextStyle(fontSize: 12)),
                           ),
-                          const SizedBox(height: 6),
-                          OutlinedButton.icon(
-                            onPressed: _showTestNotification,
-                            icon: const Icon(Icons.notification_important, size: 16),
-                            label: const Text('Otestovat ukázkovou notifikaci'),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.outlineVariant),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.offline_pin, size: 20, color: AppColors.secondary),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '100% offline & spolehlivé i při vypnuté aplikaci',
+                                        style: AppTypography.labelLaw(color: AppColors.primary),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Termíny smluv jsou registrovány v systémovém plánovači Android (AlarmManager). Telefon vás upozorní i při zcela zavřené aplikaci nebo po restartu telefonu bez potřeby internetu či externích serverů.',
+                                        style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: _showTestNotification,
+                                icon: const Icon(Icons.notifications_active, size: 16),
+                                label: const Text('Okamžitý test'),
+                              ),
+                              FilledButton.tonalIcon(
+                                onPressed: _scheduleClosedAppTestNotification,
+                                icon: const Icon(Icons.alarm, size: 16),
+                                label: const Text('Test při vypnuté aplikaci (za 10 s)'),
+                              ),
+                            ],
                           ),
                         ],
                       ],

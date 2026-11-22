@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -500,44 +499,7 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              // Option 3: CSV
-              ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: AppColors.hairlineBorder),
-                ),
-                tileColor: AppColors.surfaceContainerLow,
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryContainer.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.table_view, color: AppColors.secondary, size: 24),
-                ),
-                title: Text('Export do CSV tabulky (Excel)', style: AppTypography.labelButton(color: AppColors.onSurface)),
-                subtitle: Text('Oddělovače středník a kódování UTF-8 pro český Excel', style: AppTypography.bodySm(color: AppColors.onSurfaceVariant)),
-                trailing: Icon(Icons.download, color: AppColors.primary),
-                onTap: () async {
-                  Navigator.of(ctx).pop();
-                  final csv = exportService.generateCsv(widget.contract, shifts);
-                  final bytes = utf8.encode(csv);
-                  final now = DateTime.now();
-                  final fileName = 'Dochazka_${widget.contract.companyName}_${now.year}_${now.month}.csv';
-                  final file = await exportService.saveFile(fileName: fileName, bytes: bytes);
-                  if (!mounted) return;
-                  _showExportSuccessDialog(
-                    title: 'CSV soubor vygenerován!',
-                    filePath: file.path,
-                    sizeKb: (bytes.length / 1024).toStringAsFixed(1),
-                    format: 'CSV',
-                    contract: widget.contract,
-                    shifts: shifts,
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-              // Option 4: Copy to clipboard
+              // Option 3: Copy to clipboard
               ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -829,17 +791,22 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
                       const SizedBox(height: 14),
                       // Totals banner
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: AppColors.secondaryContainer.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          runAlignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             Text('CELKEM ODPRACOVÁNO:', style: AppTypography.labelButton(color: AppColors.onSecondaryContainer)),
-                            Text('${totalHours.toStringAsFixed(1)} hod • ${currencyFmt.format(totalWage)}', style: AppTypography.headlineSm(color: AppColors.onSecondaryContainer).copyWith(fontSize: 15)),
+                            Text('${totalHours.toStringAsFixed(1)} hod • ${currencyFmt.format(totalWage)}', style: AppTypography.headlineSm(color: AppColors.onSecondaryContainer).copyWith(fontSize: 14)),
                           ],
                         ),
                       ),
@@ -851,17 +818,18 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('..........................................'),
+                                const Text('..........................................', maxLines: 1, overflow: TextOverflow.clip),
                                 const SizedBox(height: 4),
                                 Text('Podpis zaměstnance', style: AppTypography.labelLaw(color: AppColors.outline)),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('..........................................'),
+                                const Text('..........................................', maxLines: 1, overflow: TextOverflow.clip),
                                 const SizedBox(height: 4),
                                 Text('Podpis a razítko zaměstnavatele', style: AppTypography.labelLaw(color: AppColors.outline)),
                               ],

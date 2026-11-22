@@ -61,13 +61,13 @@ class _ContractQuestionnaireScreenState
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _customHoursController = TextEditingController();
 
-  late DateTime _selectedStartDate;
-  int _probationMonths = 3;
-  bool _isIndefinite = true;
+  DateTime? _selectedStartDate;
+  int? _probationMonths;
+  bool? _isIndefinite;
   DateTime? _selectedEndDate;
   double _weeklyHours = 40;
   bool _isCustomHours = false;
-  String _selectedWorkloadPreset = '40 hod/týden';
+  String? _selectedWorkloadPreset;
   bool _isPayrollPanelExpanded = false;
   bool _hasTaxDeclaration = false;
   int _taxChildrenCount = 0;
@@ -88,16 +88,18 @@ class _ContractQuestionnaireScreenState
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.existingContract?.contractType ?? ContractType.dpc;
-    _selectedStartDate = widget.existingContract?.startDate ?? DateTime.now();
-    _startDateController.text = CzechDateFormatter.formatShort(_selectedStartDate);
-    _probationMonths = widget.existingContract?.probationPeriodMonths ?? 3;
-    _isIndefinite = widget.existingContract?.isIndefinite ?? true;
-    _selectedEndDate = widget.existingContract?.endDate ??
-        _selectedStartDate.add(const Duration(days: 365));
-    _weeklyHours = widget.existingContract?.weeklyHours ??
-        (_selectedType == ContractType.hpp ? 40 : (_selectedType == ContractType.dpc ? 20 : 300));
-    _customHoursController.text = _weeklyHours.toInt().toString();
+    _selectedType = widget.existingContract?.contractType ?? ContractType.hpp;
+    _selectedStartDate = widget.existingContract?.startDate;
+    _startDateController.text = _selectedStartDate != null
+        ? CzechDateFormatter.formatShort(_selectedStartDate!)
+        : '';
+    _probationMonths = widget.existingContract?.probationPeriodMonths;
+    _isIndefinite = widget.existingContract?.isIndefinite;
+    _selectedEndDate = widget.existingContract?.endDate;
+    _weeklyHours = widget.existingContract?.weeklyHours ?? 40;
+    _customHoursController.text = widget.existingContract != null
+        ? _weeklyHours.toInt().toString()
+        : '';
     _hasTaxDeclaration = widget.existingContract?.hasTaxDeclaration ?? false;
     _taxChildrenCount = widget.existingContract?.taxReliefChildrenCount ?? 0;
     _isStudent = widget.existingContract?.isStudent ?? false;
@@ -152,11 +154,20 @@ class _ContractQuestionnaireScreenState
             : 2;
       }
     } else {
-      _probationController.text = '3 měsíce';
-      _scheduleController.text = _selectedType == ContractType.dpp
-          ? '300 hod/rok'
-          : (_selectedType == ContractType.dpc ? '20 hod/týden' : '40 hod/týden');
-      _selectedWorkloadPreset = _scheduleController.text;
+      _probationController.text = '';
+      _scheduleController.text = '';
+      _selectedWorkloadPreset = null;
+      _companyController.text = '';
+      _roleController.text = '';
+      _wageController.text = '';
+      _locationController.text = '';
+      _notesController.text = '';
+      _roleStatus = null;
+      _locationStatus = null;
+      _startDateStatus = null;
+      _probationStatus = null;
+      _nonCompeteStatus = null;
+      _scheduleStatus = null;
     }
   }
 
@@ -188,7 +199,7 @@ class _ContractQuestionnaireScreenState
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedStartDate,
+      initialDate: _selectedStartDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
       helpText: 'VYBERTE DEN NÁSTUPU DO PRÁCE',
@@ -212,7 +223,7 @@ class _ContractQuestionnaireScreenState
       setState(() {
         _selectedStartDate = picked;
         _startDateController.text = CzechDateFormatter.formatShort(picked);
-        if (_startDateStatus == 2) {
+        if (_startDateStatus == 2 || _startDateStatus == null) {
           _startDateStatus = 0;
         }
       });
@@ -220,10 +231,11 @@ class _ContractQuestionnaireScreenState
   }
 
   Future<void> _pickEndDate() async {
+    final baseStart = _selectedStartDate ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedEndDate ?? _selectedStartDate.add(const Duration(days: 365)),
-      firstDate: _selectedStartDate,
+      initialDate: _selectedEndDate ?? baseStart.add(const Duration(days: 365)),
+      firstDate: baseStart,
       lastDate: DateTime(2035),
       helpText: 'DATUM UKONČENÍ SMLOUVY NA DOBU URČITOU',
       cancelText: 'Zrušit',
@@ -274,12 +286,16 @@ class _ContractQuestionnaireScreenState
     if (_roleStatus == 1) count++;
     if (_locationStatus == 2) count++;
     if (_startDateStatus == 1) count++;
-    if (_probationStatus == 1 || (_probationStatus != 2 && _probationMonths > 3)) count++;
+    if (_probationStatus == 1 || (_probationStatus != 2 && (_probationMonths ?? 0) > 3)) count++;
     if (_scheduleStatus == 1 || _scheduleStatus == 2) count++;
     return count;
   }
 
+  int get _progressPercent => ((_verifiedCount / 10.0) * 100).round();
+
   int get _score {
+    if (_verifiedCount == 0) return 0;
+
     int score = 100;
     if (_roleStatus == 2) {
       score -= 35;
@@ -299,7 +315,7 @@ class _ContractQuestionnaireScreenState
       score -= 10;
     }
 
-    if (_probationStatus == 1 || (_probationStatus != 2 && _probationMonths > 3)) {
+    if (_probationStatus == 1 || (_probationStatus != 2 && (_probationMonths ?? 0) > 3)) {
       score -= 10;
     }
     if (_nonCompeteStatus == 1) {
@@ -315,14 +331,16 @@ class _ContractQuestionnaireScreenState
 
   int get _verifiedCount {
     int count = 0;
-    if (_roleStatus != null) count++;
-    if (_locationStatus != null) count++;
-    if (_startDateStatus != null) count++;
-    if (_probationStatus != null) count++;
-    if (_nonCompeteStatus != null) count++;
-    if (_scheduleStatus != null) count++;
     if (_companyController.text.trim().isNotEmpty) count++;
     if (_wageController.text.trim().isNotEmpty) count++;
+    if (_roleStatus != null) count++;
+    if (_locationStatus != null) count++;
+    if (_startDateStatus != null || _selectedStartDate != null) count++;
+    if (_isIndefinite != null) count++;
+    if (_probationStatus != null || _probationMonths != null) count++;
+    if (_nonCompeteStatus != null) count++;
+    if (_scheduleStatus != null) count++;
+    if (_roleController.text.trim().isNotEmpty || _notesController.text.trim().isNotEmpty) count++;
     return count;
   }
 
@@ -452,9 +470,9 @@ class _ContractQuestionnaireScreenState
       monthlyGrossWage: _selectedType == ContractType.hpp
           ? (double.tryParse(_wageController.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0)
           : 0,
-      startDate: _selectedStartDate,
-      endDate: _isIndefinite ? null : _selectedEndDate,
-      probationPeriodMonths: _probationStatus == 2 ? 0 : _probationMonths,
+      startDate: _selectedStartDate ?? DateTime.now(),
+      endDate: (_isIndefinite ?? true) ? null : _selectedEndDate,
+      probationPeriodMonths: _probationStatus == 2 ? 0 : (_probationMonths ?? 0),
       workLocation: _locationController.text.trim().isNotEmpty
           ? _locationController.text.trim()
           : (_locationStatus == 0 ? 'Dle smlouvy' : ''),
@@ -778,7 +796,18 @@ class _ContractQuestionnaireScreenState
                             ),
                           ],
                         ),
-                        ScoreRing(score: _score),
+                        Column(
+                          children: [
+                            ScoreRing(score: _verifiedCount == 0 ? 0 : _score),
+                            const SizedBox(height: 4),
+                            Text(
+                              _verifiedCount == 0
+                                  ? 'Zatím neověřeno'
+                                  : (_criticalCount > 0 ? 'Rizikové skóre' : 'Právní skóre'),
+                              style: AppTypography.labelLaw(color: AppColors.onSurfaceVariant).copyWith(fontSize: 10),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -789,7 +818,7 @@ class _ContractQuestionnaireScreenState
                         minHeight: 6,
                         backgroundColor: AppColors.surfaceContainer,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.secondary,
+                          _criticalCount > 0 ? AppColors.error : AppColors.secondary,
                         ),
                       ),
                     ),
@@ -801,7 +830,11 @@ class _ContractQuestionnaireScreenState
                             ? AppColors.errorContainer.withValues(alpha: 0.6)
                             : (_warningCount > 0
                                 ? AppColors.surfaceContainerLow
-                                : AppColors.secondaryContainer.withValues(alpha: 0.35)),
+                                : (_verifiedCount == 0
+                                    ? AppColors.surfaceContainerLow
+                                    : (_verifiedCount == 10
+                                        ? AppColors.secondaryContainer.withValues(alpha: 0.35)
+                                        : AppColors.surfaceContainerLow))),
                         borderRadius: BorderRadius.circular(10),
                         border: _criticalCount > 0
                             ? Border.all(color: AppColors.error, width: 1.5)
@@ -814,13 +847,17 @@ class _ContractQuestionnaireScreenState
                                 ? Icons.dangerous
                                 : (_warningCount > 0
                                     ? Icons.warning_amber_rounded
-                                    : Icons.verified),
+                                    : (_verifiedCount == 0
+                                        ? Icons.rule
+                                        : (_verifiedCount == 10 ? Icons.verified : Icons.timelapse))),
                             size: 22,
                             color: _criticalCount > 0
                                 ? AppColors.error
                                 : (_warningCount > 0
                                     ? AppColors.primary
-                                    : AppColors.secondary),
+                                    : (_verifiedCount == 0
+                                        ? AppColors.onSurfaceVariant
+                                        : (_verifiedCount == 10 ? AppColors.secondary : AppColors.primary))),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -830,20 +867,30 @@ class _ContractQuestionnaireScreenState
                                 Text(
                                   _criticalCount > 0
                                       ? '$_criticalCount ${_criticalCount == 1 ? "kritická chyba" : (_criticalCount < 5 ? "kritické chyby" : "kritických chyb")} – smlouva je neplatná!'
-                                      : '$_score % smlouvy zkontrolováno',
+                                      : (_verifiedCount == 0
+                                          ? 'Zatím nezkontrolováno (0 %)'
+                                          : (_verifiedCount < 10
+                                              ? '$_progressPercent % smlouvy zkontrolováno ($_verifiedCount z 10)'
+                                              : '100 % smlouvy kompletně prověřeno')),
                                   style: AppTypography.labelButton(
                                     color: _criticalCount > 0
                                         ? AppColors.error
-                                        : AppColors.primary,
+                                        : (_verifiedCount == 0
+                                            ? AppColors.onSurface
+                                            : (_verifiedCount == 10 ? AppColors.secondary : AppColors.primary)),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   _criticalCount > 0
                                       ? 'Ve smlouvě chybí zákonem vyžadované náležitosti (§ 34 ZP) nebo obsahuje neplatná ujednání.'
-                                      : (_warningCount > 0
-                                          ? '$_warningCount ${_warningCount == 1 ? "výstraha vyžaduje" : (_warningCount < 5 ? "výstrahy vyžadují" : "výstrah vyžaduje")} vyjasnění se zaměstnavatelem.'
-                                          : 'Všechny klíčové náležitosti jsou v pořádku.'),
+                                      : (_verifiedCount == 0
+                                          ? 'Začněte zodpovězením jednotlivých bodů níže pro ověření platnosti smlouvy.'
+                                          : (_warningCount > 0
+                                              ? '$_warningCount ${_warningCount == 1 ? "výstraha vyžaduje" : (_warningCount < 5 ? "výstrahy vyžadují" : "výstrah vyžaduje")} vyjasnění se zaměstnavatelem.'
+                                              : (_verifiedCount < 10
+                                                  ? 'Dosud ověřené položky jsou v pořádku. Pokračujte ve vyplňování.'
+                                                  : 'Všechny klíčové náležitosti jsou v pořádku a v souladu se zákonem.'))),
                                   style: AppTypography.bodySm(
                                     color: _criticalCount > 0
                                         ? AppColors.onErrorContainer
@@ -1045,13 +1092,9 @@ class _ContractQuestionnaireScreenState
                 ),
               },
             ),
-            const SizedBox(height: 12),
-
-            // Contract Duration Card (Doba určitá vs neurčitá)
-            _buildContractDurationCard(),
             const SizedBox(height: 20),
 
-            // SECTION 2: Supplementary Clauses
+            // SECTION 2: Supplementary Clauses (Optional)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1069,7 +1112,7 @@ class _ContractQuestionnaireScreenState
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Doplňková ujednání a doložky',
+                          'Doplňková ujednání (nepovinné)',
                           style: AppTypography.headlineSm(
                             color: AppColors.primary,
                           ),
@@ -1081,7 +1124,7 @@ class _ContractQuestionnaireScreenState
                 ),
                 const SizedBox(width: 8),
                 StatuteBadge(
-                  text: '§ 35, § 310 ZP',
+                  text: '§ 35, § 39, § 310 ZP',
                   backgroundColor: AppColors.secondaryContainer,
                   textColor: AppColors.onSecondaryContainer,
                 ),
@@ -1089,9 +1132,13 @@ class _ContractQuestionnaireScreenState
             ),
             const SizedBox(height: 4),
             Text(
-              'Zde bývají nejčastější sporná ujednání, sankce a skryté povinnosti.',
+              'Volitelná ujednání: doba trvání poměru, zkušební doba, konkurenční doložka a rozvrh směn.',
               style: AppTypography.bodySm(color: AppColors.onSurfaceVariant),
             ),
+            const SizedBox(height: 12),
+
+            // Doba trvání pracovního poměru (Doba určitá vs neurčitá - nepovinné)
+            _buildContractDurationCard(),
             const SizedBox(height: 12),
 
             // Item 4: Zkušební doba
@@ -1113,10 +1160,10 @@ class _ContractQuestionnaireScreenState
                 setState(() {
                   _probationStatus = idx;
                   if (idx == 0) {
-                    if (_probationMonths > 3 || _probationMonths == 0) _probationMonths = 3;
+                    if ((_probationMonths ?? 0) > 3 || (_probationMonths ?? 0) == 0) _probationMonths = 3;
                     _probationController.text = '$_probationMonths měsíce';
                   } else if (idx == 1) {
-                    if (_probationMonths <= 3) _probationMonths = 4;
+                    if ((_probationMonths ?? 0) <= 3) _probationMonths = 4;
                     _probationController.text = '$_probationMonths měsíce';
                   } else {
                     _probationMonths = 0;
@@ -1845,8 +1892,12 @@ class _ContractQuestionnaireScreenState
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    CzechDateFormatter.formatFull(_selectedStartDate),
-                    style: AppTypography.headlineSm(color: AppColors.primary),
+                    _selectedStartDate != null
+                        ? CzechDateFormatter.formatFull(_selectedStartDate!)
+                        : 'Zatím nevybráno (klikněte pro výběr)',
+                    style: _selectedStartDate != null
+                        ? AppTypography.headlineSm(color: AppColors.primary)
+                        : AppTypography.bodyMd(color: AppColors.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -1863,7 +1914,7 @@ class _ContractQuestionnaireScreenState
                   const Icon(Icons.edit_calendar, size: 14, color: Colors.white),
                   const SizedBox(width: 4),
                   Text(
-                    'Vybrat datum',
+                    _selectedStartDate != null ? 'Změnit datum' : 'Vybrat datum',
                     style: AppTypography.labelBadge(color: Colors.white),
                   ),
                 ],
@@ -1877,12 +1928,14 @@ class _ContractQuestionnaireScreenState
 
   Widget _buildProbationMonthsSelector() {
     final options = [0, 1, 2, 3, 4, 5, 6];
-    final effectiveMonths = _probationStatus == 2 ? 0 : _probationMonths;
-    final probationEnd = DateTime(
-      _selectedStartDate.year,
-      _selectedStartDate.month + effectiveMonths,
-      _selectedStartDate.day,
-    );
+    final effectiveMonths = _probationStatus == 2 ? 0 : (_probationMonths ?? 0);
+    final DateTime? probationEnd = _selectedStartDate != null && _probationMonths != null && _probationStatus != 2
+        ? DateTime(
+            _selectedStartDate!.year,
+            _selectedStartDate!.month + effectiveMonths,
+            _selectedStartDate!.day,
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1896,8 +1949,9 @@ class _ContractQuestionnaireScreenState
           spacing: 6,
           runSpacing: 6,
           children: options.map((m) {
-            final isSelected = (_probationStatus == 2 && m == 0) ||
-                (_probationStatus != 2 && _probationMonths == m);
+            final isSelected = _probationMonths != null &&
+                ((_probationStatus == 2 && m == 0) ||
+                 (_probationStatus != 2 && _probationMonths == m));
             String label;
             if (m == 0) {
               label = '0 měs (bez)';
@@ -1968,9 +2022,13 @@ class _ContractQuestionnaireScreenState
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  effectiveMonths > 0
-                      ? 'Konec zkušební doby: ${CzechDateFormatter.formatFull(probationEnd)}'
-                      : 'Bez zkušební doby – poměr nelze zrušit ve zkušební době',
+                  _probationStatus == 2 || _probationMonths == 0
+                      ? 'Bez zkušební doby – poměr nelze zrušit ve zkušební době'
+                      : (effectiveMonths > 0
+                          ? (probationEnd != null
+                              ? 'Konec zkušební doby: ${CzechDateFormatter.formatFull(probationEnd)}'
+                              : 'Konec zkušební doby: bude dopočítán po zvolení dne nástupu')
+                          : 'Délka zkušební doby zatím nevybrána'),
                   style: AppTypography.labelLaw(color: AppColors.onSurface).copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2024,9 +2082,8 @@ class _ContractQuestionnaireScreenState
             final String label = p['label'] as String;
             final double h = p['hours'] as double;
             final isJine = h == -1.0;
-            final isSelected = isJine
-                ? _isCustomHours
-                : (!_isCustomHours && _weeklyHours == h);
+            final isSelected = _selectedWorkloadPreset != null &&
+                (isJine ? _isCustomHours : (!_isCustomHours && _weeklyHours == h));
 
             return ChoiceChip(
               label: Text(label),
@@ -2185,7 +2242,7 @@ class _ContractQuestionnaireScreenState
                 Expanded(
                   child: ChoiceChip(
                     label: const Center(child: Text('Doba neurčitá')),
-                    selected: _isIndefinite,
+                    selected: _isIndefinite == true,
                     onSelected: (_) {
                       setState(() {
                         _isIndefinite = true;
@@ -2193,10 +2250,10 @@ class _ContractQuestionnaireScreenState
                     },
                     selectedColor: AppColors.secondaryContainer,
                     labelStyle: TextStyle(
-                      color: _isIndefinite
+                      color: _isIndefinite == true
                           ? AppColors.onSecondaryContainer
                           : AppColors.onSurface,
-                      fontWeight: _isIndefinite ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: _isIndefinite == true ? FontWeight.bold : FontWeight.normal,
                       fontSize: 12,
                     ),
                   ),
@@ -2205,26 +2262,26 @@ class _ContractQuestionnaireScreenState
                 Expanded(
                   child: ChoiceChip(
                     label: const Center(child: Text('Doba určitá')),
-                    selected: !_isIndefinite,
+                    selected: _isIndefinite == false,
                     onSelected: (_) {
                       setState(() {
                         _isIndefinite = false;
-                        _selectedEndDate ??= _selectedStartDate.add(const Duration(days: 365));
+                        _selectedEndDate ??= (_selectedStartDate ?? DateTime.now()).add(const Duration(days: 365));
                       });
                     },
                     selectedColor: AppColors.primaryFixed,
                     labelStyle: TextStyle(
-                      color: !_isIndefinite
+                      color: _isIndefinite == false
                           ? AppColors.onPrimaryFixed
                           : AppColors.onSurface,
-                      fontWeight: !_isIndefinite ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: _isIndefinite == false ? FontWeight.bold : FontWeight.normal,
                       fontSize: 12,
                     ),
                   ),
                 ),
               ],
             ),
-            if (!_isIndefinite) ...[
+            if (_isIndefinite == false) ...[
               const SizedBox(height: 12),
               InkWell(
                 onTap: _pickEndDate,
@@ -2300,10 +2357,11 @@ class _ContractQuestionnaireScreenState
                     label: const Text('+6 měsíců'),
                     onPressed: () {
                       setState(() {
+                        final base = _selectedStartDate ?? DateTime.now();
                         _selectedEndDate = DateTime(
-                          _selectedStartDate.year,
-                          _selectedStartDate.month + 6,
-                          _selectedStartDate.day,
+                          base.year,
+                          base.month + 6,
+                          base.day,
                         );
                       });
                     },
@@ -2312,10 +2370,11 @@ class _ContractQuestionnaireScreenState
                     label: const Text('+1 rok'),
                     onPressed: () {
                       setState(() {
+                        final base = _selectedStartDate ?? DateTime.now();
                         _selectedEndDate = DateTime(
-                          _selectedStartDate.year + 1,
-                          _selectedStartDate.month,
-                          _selectedStartDate.day,
+                          base.year + 1,
+                          base.month,
+                          base.day,
                         );
                       });
                     },
@@ -2324,10 +2383,11 @@ class _ContractQuestionnaireScreenState
                     label: const Text('+2 roky'),
                     onPressed: () {
                       setState(() {
+                        final base = _selectedStartDate ?? DateTime.now();
                         _selectedEndDate = DateTime(
-                          _selectedStartDate.year + 2,
-                          _selectedStartDate.month,
-                          _selectedStartDate.day,
+                          base.year + 2,
+                          base.month,
+                          base.day,
                         );
                       });
                     },
@@ -2336,10 +2396,11 @@ class _ContractQuestionnaireScreenState
                     label: const Text('+3 roky (limit)'),
                     onPressed: () {
                       setState(() {
+                        final base = _selectedStartDate ?? DateTime.now();
                         _selectedEndDate = DateTime(
-                          _selectedStartDate.year + 3,
-                          _selectedStartDate.month,
-                          _selectedStartDate.day,
+                          base.year + 3,
+                          base.month,
+                          base.day,
                         );
                       });
                     },
@@ -2348,7 +2409,7 @@ class _ContractQuestionnaireScreenState
               ),
               const SizedBox(height: 8),
               if (_selectedEndDate != null &&
-                  _selectedEndDate!.difference(_selectedStartDate).inDays > 1096)
+                  _selectedEndDate!.difference(_selectedStartDate ?? DateTime.now()).inDays > 1096)
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

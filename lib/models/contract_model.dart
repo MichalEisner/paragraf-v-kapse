@@ -72,6 +72,16 @@ class Contract {
     return end.difference(today).inDays;
   }
 
+  /// Calculated probation end date (null if no probation)
+  DateTime? get probationEndDate {
+    if (probationPeriodMonths <= 0) return null;
+    return DateTime(
+      startDate.year,
+      startDate.month + probationPeriodMonths,
+      startDate.day,
+    ).subtract(const Duration(days: 1));
+  }
+
   /// Days remaining in probation period (null if no probation or already ended)
   int? get daysRemainingInProbation {
     if (probationPeriodMonths <= 0) return null;

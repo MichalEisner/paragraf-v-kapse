@@ -6,6 +6,7 @@ import '../models/work_shift_model.dart';
 import '../models/tax_parameters_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/native_bridge_service.dart';
+import '../services/notification_scheduler_service.dart';
 import '../services/tax_calculator_service.dart';
 import '../theme/app_colors.dart';
 
@@ -50,6 +51,9 @@ class AppState extends ChangeNotifier {
     }
     _isInitialized = true;
     notifyListeners();
+
+    // Sync all offline scheduled alarms with Android OS
+    await NotificationSchedulerService.syncAllReminders(this);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -66,6 +70,7 @@ class AppState extends ChangeNotifier {
       await NativeBridgeService.requestNotificationPermission();
     }
     await _storageService.saveNotificationSettings(settings);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 
@@ -99,6 +104,7 @@ class AppState extends ChangeNotifier {
     }
     await _storageService.saveContracts(_contracts);
     await _storageService.saveShifts(_shifts);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 
@@ -112,6 +118,7 @@ class AppState extends ChangeNotifier {
   Future<void> addContract(Contract contract) async {
     _contracts.insert(0, contract);
     await _storageService.saveContracts(_contracts);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 
@@ -120,6 +127,7 @@ class AppState extends ChangeNotifier {
     if (index != -1) {
       _contracts[index] = contract;
       await _storageService.saveContracts(_contracts);
+      await NotificationSchedulerService.syncAllReminders(this);
       notifyListeners();
     }
   }
@@ -130,6 +138,7 @@ class AppState extends ChangeNotifier {
       final current = _contracts[index];
       _contracts[index] = current.copyWith(isArchived: !current.isArchived);
       await _storageService.saveContracts(_contracts);
+      await NotificationSchedulerService.syncAllReminders(this);
       notifyListeners();
     }
   }
@@ -139,12 +148,14 @@ class AppState extends ChangeNotifier {
     _shifts.removeWhere((s) => s.contractId == contractId);
     await _storageService.saveContracts(_contracts);
     await _storageService.saveShifts(_shifts);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 
   Future<void> addShift(WorkShift shift) async {
     _shifts.insert(0, shift);
     await _storageService.saveShifts(_shifts);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 
@@ -153,6 +164,7 @@ class AppState extends ChangeNotifier {
     if (index != -1) {
       _shifts[index] = shift;
       await _storageService.saveShifts(_shifts);
+      await NotificationSchedulerService.syncAllReminders(this);
       notifyListeners();
     }
   }
@@ -160,6 +172,7 @@ class AppState extends ChangeNotifier {
   Future<void> deleteShift(String shiftId) async {
     _shifts.removeWhere((s) => s.id == shiftId);
     await _storageService.saveShifts(_shifts);
+    await NotificationSchedulerService.syncAllReminders(this);
     notifyListeners();
   }
 

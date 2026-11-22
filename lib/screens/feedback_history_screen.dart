@@ -53,7 +53,7 @@ class FeedbackHistoryScreen extends StatelessWidget {
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                   itemCount: tickets.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final ticket = tickets[index];
                     return _buildTicketCard(context, ticket);
@@ -288,7 +288,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     super.dispose();
   }
 
-  void _sendReply([FeedbackTicket? ticket]) {
+  Future<void> _sendReply([FeedbackTicket? ticket]) async {
     if (ticket != null && (ticket.status == TicketStatus.resolved || ticket.status == TicketStatus.closed)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -300,7 +300,15 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       return;
     }
 
+    if (!_simulatedOffline) {
+      final connected = await NativeBridgeService.isInternetConnected();
+      if (!connected && mounted) {
+        setState(() => _isOnline = false);
+      }
+    }
+
     if (!_isOnline) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.error,
@@ -443,6 +451,7 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
                   Navigator.of(ctx).pop();
                   setState(() {
                     _simulatedOffline = !_simulatedOffline;
+                    NativeBridgeService.simulatedOnline = _simulatedOffline ? false : null;
                     if (_simulatedOffline) {
                       _isOnline = false;
                     } else {

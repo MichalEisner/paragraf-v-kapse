@@ -6,11 +6,19 @@ import 'package:paragraf_do_kapsy/screens/contract_detail_screen.dart';
 import 'package:paragraf_do_kapsy/screens/contract_questionnaire_screen.dart';
 import 'package:paragraf_do_kapsy/services/law_data_service.dart';
 import 'package:paragraf_do_kapsy/state/app_state.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('paragraf/native'), (MethodCall call) async {
+      if (call.method == 'areNotificationsEnabled') return true;
+      if (call.method == 'isOnline') return false;
+      return true;
+    });
   });
 
   testWidgets('ContractQuestionnaireScreen renders and calculates score', (WidgetTester tester) async {
@@ -30,9 +38,17 @@ void main() {
     expect(find.text('1. Druh práce'), findsOneWidget);
     expect(find.text('2. Místo výkonu práce'), findsOneWidget);
     expect(find.text('3. Den nástupu do práce'), findsOneWidget);
+    expect(find.text('Doplňková ujednání (nepovinné)'), findsOneWidget);
+    expect(find.text('Doba trvání pracovního poměru'), findsOneWidget);
     expect(find.text('4. Zkušební doba'), findsOneWidget);
     expect(find.text('5. Konkurenční doložka'), findsOneWidget);
     expect(find.text('Uložit do Mých smluv'), findsOneWidget);
+
+    // Verify initial blank state when creating new contract
+    expect(find.text('/ 10 položek ověřeno'), findsOneWidget);
+    expect(find.text('Zatím nezkontrolováno (0 %)'), findsOneWidget);
+    expect(find.text('Zatím neověřeno'), findsWidgets);
+    expect(find.text('Zatím nevybráno (klikněte pro výběr)'), findsOneWidget);
   });
 
   testWidgets('ContractDetailScreen displays DPP hour tracker and logs new shift', (WidgetTester tester) async {
